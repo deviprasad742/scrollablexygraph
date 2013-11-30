@@ -7,6 +7,13 @@ import org.csstudio.swt.xygraph.dataprovider.Sample;
 import org.csstudio.swt.xygraph.linearscale.Range;
 import org.eclipse.swt.widgets.Display;
 
+/**
+ * 
+ * A data provider which displays the most recent samples when the scrollbar is
+ * to extreme right or the past samples based on the scrollbar position.
+ * 
+ */
+
 public class ScrollableGraphDataProvider extends AbstractDataProvider {
 
 	private static final double MARGIN = 0.3;
@@ -43,7 +50,6 @@ public class ScrollableGraphDataProvider extends AbstractDataProvider {
 			pastSamples = null;
 		} else {
 			int graphSpan = preferences.getVisibleItems();
-			// each increment covers half of graph span hence selection also covers half of it
 			int startIndex = (graphSpan / preferences.getThumb()) * selection;
 			int endIndex = startIndex + graphSpan;
 			if (endIndex >= buffer.size()) {

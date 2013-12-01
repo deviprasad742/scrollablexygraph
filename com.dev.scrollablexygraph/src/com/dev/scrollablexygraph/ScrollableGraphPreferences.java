@@ -5,7 +5,7 @@ public class ScrollableGraphPreferences {
 	public static final int EVENT_REFRESH = -1;
 
 	private int visibleItems = 100;
-	private int historyLimit = 10000;
+	private int historyLimit = 1000;
 	private int refreshDelay = 50;
 
 	private int captureDelay = 500;

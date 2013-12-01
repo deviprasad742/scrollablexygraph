@@ -1,5 +1,7 @@
 package com.dev.scrollablexygraph;
 
+import java.util.Arrays;
+
 import org.csstudio.swt.xygraph.dataprovider.AbstractDataProvider;
 import org.csstudio.swt.xygraph.dataprovider.IDataProviderListener;
 import org.csstudio.swt.xygraph.dataprovider.ISample;
@@ -22,7 +24,10 @@ public class ScrollableGraphDataProvider extends AbstractDataProvider {
 	private ExtCircularBuffer<ISample> buffer;
 
 	private int startIndex;
-	private ISample[] pastSamples;
+	// the part of the history which is currently visible
+	private ISample[] visibleHistory;
+	// a snapshot at the time when the scrollbar is moved back first time
+	private ISample[] historySnapShot;
 	private int size;
 	private Runnable fireUpdate;
 	private boolean dataRangedirty = false;
@@ -41,22 +46,29 @@ public class ScrollableGraphDataProvider extends AbstractDataProvider {
 	}
 
 	public int getScrollLength() {
-		double ratio = (double) buffer.size() / preferences.getVisibleItems();
-		return (int) Math.ceil(ratio) * preferences.getThumb();
+		double itemsPerScroll = (double) preferences.getVisibleItems() / preferences.getThumb();
+		double scrollLength = buffer.size() / itemsPerScroll;
+		return (int) Math.ceil(scrollLength);
 	}
 
 	public synchronized void setDataSelection(int selection) {
 		if (selection == LIVE_DATA_SELECTION) {
-			pastSamples = null;
+			historySnapShot = null;
 		} else {
+			if (historySnapShot == null) {
+				// capture the history at the point the scrollbar is moved back from extreme right
+				historySnapShot = buffer.getSubArray(0, buffer.size(), new Sample[0]);
+			}
 			int graphSpan = preferences.getVisibleItems();
 			int startIndex = (graphSpan / preferences.getThumb()) * selection;
 			int endIndex = startIndex + graphSpan;
-			if (endIndex >= buffer.size()) {
-				endIndex = buffer.size();
+			int snapSize = historySnapShot.length;
+			if (endIndex >= snapSize) {
+				endIndex = snapSize;
 				startIndex = endIndex - graphSpan;
 			}
-			pastSamples = buffer.getSubArray(startIndex, endIndex, new Sample[0]);
+			//portin of the history which is dispayed currently
+			visibleHistory = Arrays.copyOfRange(historySnapShot, startIndex, endIndex);
 		}
 		fireDataChange();
 	}
@@ -73,7 +85,7 @@ public class ScrollableGraphDataProvider extends AbstractDataProvider {
 	@Override
 	public ISample getSample(int index) {
 		if (isPaused()) {
-			return pastSamples[index];
+			return visibleHistory[index];
 		} else {
 			return buffer.getElement(startIndex + index);
 		}
@@ -149,7 +161,7 @@ public class ScrollableGraphDataProvider extends AbstractDataProvider {
 	}
 
 	public boolean isPaused() {
-		return pastSamples != null;
+		return historySnapShot != null;
 	}
 
 	@Override
